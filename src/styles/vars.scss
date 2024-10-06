@@ -1,0 +1,35 @@
+:root {
+  // Colors
+  // ********************
+  // ********************
+  --color-white: #FFFFFF;
+
+  --blue-dark-20: #2B344B;
+  --blue-dark-30: #3E4A68;
+
+  --color-blue: #638EC4;
+
+  --color-fog-20: #F2F2F2;
+  --color-fog-30: #A6A8AB;
+
+  --color-brown-20: #4D4D4D;
+  --color-brown-30: #58595B;
+
+  --color-rose: #E96FA4;
+  --color-rose-dark: #AF638C;
+
+  --color-green: #65BD65;
+  --color-green-dark: #508853;
+
+  --color-orange: #EC6B3A;
+  --color-orange-dark: #CA5428;
+
+  // General
+  --font-family: 'VAG World Bold';
+  --font-weight: 700;
+  --font-size: 42px;
+  --font-color: var(--color-black);
+  --font-line-height: 84.17px;
+
+  --background-body: var(--blue-dark-20);
+}

@@ -1,0 +1,19 @@
+@import "vars";
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background: var(--background-body);
+  color: var(--font-color);
+  font-size: var(--font-size);
+  font-weight: var(--font-weight);
+  line-height: var(--font-line-height);
+}
+
+p {
+  margin: 0;
+}
