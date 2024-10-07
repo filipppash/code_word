@@ -29,7 +29,7 @@
     flex-direction: row;
     width: 100%;
     max-width: 306px;
-    height: 306px;
+    // height: 306px;
     gap: 6px;
 
     &_item {
@@ -179,6 +179,11 @@
 }
 
 .page-content_item.active {
+  background: var(--color-green);
+  color: var(--color-white);
+}
+
+.page-content_block__item.active {
   background: var(--color-green);
   color: var(--color-white);
 }
