@@ -13,7 +13,17 @@ export class WinScreen extends Core {
     }
 
     getWinScreenHtml() {
-        return `
+        if (this.level >= 7) {
+            return `
+            <div class="win-page">
+                <div class="win-page_title">
+                    <span class="win-page_title__text">Уровень ${ this.level } пройден</span>
+                    <span class="win-page_title__subtext">Изумительно!</span>
+                </div>
+            </div>
+        `;
+        } else {
+            return `
             <div class="win-page">
                 <div class="win-page_title">
                     <span class="win-page_title__text">Уровень ${ this.level } пройден</span>
@@ -25,6 +35,7 @@ export class WinScreen extends Core {
                 </div>
             </div>
         `;
+        }
     }
 
     setupButtonListener() {

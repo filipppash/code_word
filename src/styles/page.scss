@@ -195,6 +195,25 @@
   box-shadow: var(--color-rose-dark) 0 6px 0;
 }
 
+.line-visualization {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-blue);
+  stroke-width: 21;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.3s;
+}
+
 // Win screen
 
 :host[ng-reflect-disabled="true"] {

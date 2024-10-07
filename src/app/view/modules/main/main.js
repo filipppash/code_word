@@ -16,6 +16,7 @@ export class Main extends Core {
         this.currentWordIndex = 0; // Индекс текущего слова
         this.guessedWords = []; // Массив угаданных слов
         this.level = 0; // Текущий уровень
+        this.isDrawing = false;
     }
 
     render() {
@@ -50,6 +51,9 @@ export class Main extends Core {
                 <div class="page-content_min__item"></div>
             </div>
             <div class="page-ring_container">
+                <svg class="line-visualization" width="294" height="294">
+                    <path class="line" fill="none" stroke="blue" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
                 <div class="page-ring_container__item"></div>
             </div>
         </div>
@@ -204,10 +208,39 @@ export class Main extends Core {
     setupListeners() {
         const letters = document.querySelectorAll('.page-ring_container__circle');
         letters.forEach(letter => {
-            letter.addEventListener('mousedown', (event) => this.startSelection(event, letter));
+            letter.addEventListener('mousedown', (event) => {
+                this.startSelection(event, letter);
+                this.startDrawing(event); // Начинаем рисование
+            });
             letter.addEventListener('mouseover', (event) => this.selectLetter(event, letter));
-            letter.addEventListener('mouseup', () => this.endSelection());
+            letter.addEventListener('mouseup', () => {
+                this.endSelection();
+                this.endDrawing(); // Завершение рисования
+            });
         });
+        document.addEventListener('mousemove', (event) => {
+            if (this.isDrawing) {
+                this.drawLine(event); // Рисуем линию, если происходит рисование
+            }
+        });
+    }
+
+    startDrawing(event) {
+        this.isDrawing = true; // Устанавливаем флаг рисования в true
+        this.clearLine(); // Очищаем предыдущую линию
+        this.drawLine(event); // Начинаем рисовать с текущей позиции мыши
+    }
+
+    endDrawing() {
+        this.isDrawing = false; // Устанавливаем флаг рисования в false
+    }
+
+    clearLine() {
+        const linePath = document.querySelector('.line-visualization .line');
+
+        if (linePath) {
+            linePath.setAttribute('d', ''); // Очищаем линию
+        }
     }
 
     startSelection(event, letter) {
@@ -236,6 +269,7 @@ export class Main extends Core {
         if (this.currentWord !== '') {
             this.checkWord(); // Проверяем слово
             this.resetSelection(); // Сбросить выбор после проверки слова
+            this.clearLine();
         }
     }
 
@@ -365,6 +399,22 @@ export class Main extends Core {
         });
 
         return { shortWords, longWords };
+    }
+
+    drawLine(event) {
+        const linePath = document.querySelector('.line-visualization .line');
+        const containerRect = document.querySelector('.page-ring_container').getBoundingClientRect();
+
+        // Получаем координаты мыши относительно контейнера
+        const x = event.clientX - containerRect.left;
+        const y = event.clientY - containerRect.top;
+
+        const currentPath = linePath.getAttribute('d') || ''; // Получаем текущий путь
+        const newPath = currentPath + (currentPath ? ` L ${x} ${y}` : ` M ${x} ${y}`); // Добавляем новую точку
+
+        linePath.setAttribute('d', newPath); // Обновляем атрибут d
+        linePath.setAttribute('stroke-linecap', 'round'); // Скругление концов
+        linePath.setAttribute('stroke-linejoin', 'round'); // Скругление углов
     }
 
     endGame() {
