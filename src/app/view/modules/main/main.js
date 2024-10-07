@@ -5,14 +5,13 @@ import json2 from 'assets/mock/2.json';
 import json3 from 'assets/mock/3.json';
 
 import {WinScreen} from "../../components/win-screen/win-screen";
+import {Helper} from "../helper";
 
 export class Main extends Core {
     constructor() {
         super();
+        this.helper = new Helper();
         this.wordsList = [ json1.words, json2.words, json3.words ];
-        this.currentWord = '';
-        this.selectedLetters = [];
-        this.minVisible = false; // Флаг видимости блока для выбранных букв
         this.currentWordIndex = 0; // Индекс текущего слова
         this.guessedWords = []; // Массив угаданных слов
         this.level = 0; // Текущий уровень
@@ -33,8 +32,9 @@ export class Main extends Core {
     }
 
     getMainHtml() {
-        const shortWords = this.getWordsByLength().shortWords;
-        const longWords = this.getWordsByLength().longWords;
+        const wordsForLevel = this.getWordsForLevel(this.level + 1);
+        const shortWords = this.helper.getWordsByLength(wordsForLevel).shortWords;
+        const longWords = this.helper.getWordsByLength(wordsForLevel).longWords;
 
         return `
         <div class="page">
@@ -108,8 +108,9 @@ export class Main extends Core {
     }
 
     setupRing() {
-        const shortWords = this.getWordsByLength().shortWords;
-        const longWords = this.getWordsByLength().longWords;
+        const wordsForLevel = this.getWordsForLevel(this.level + 1);
+        const shortWords = this.helper.getWordsByLength(wordsForLevel).shortWords;
+        const longWords = this.helper.getWordsByLength(wordsForLevel).longWords;
 
         // Объединяем массивы в нужном порядке
         const orderedWords = [...shortWords, ...longWords];
@@ -131,7 +132,7 @@ export class Main extends Core {
             circle.className = `page-ring_container__circle`;
 
             // Получаем угол и радиус
-            const { angle, translateX } = this.getAngleAndTranslateX(radius, lettersCount.length, index);
+            const { angle, translateX } = this.helper.getAngleAndTranslateX(radius, lettersCount.length, index);
 
             // Проверяем, что угол не равен null
             if (angle === null) return;
@@ -157,54 +158,6 @@ export class Main extends Core {
         });
     }
 
-    getAngleAndTranslateX(radius, length, index) {
-        let angle;
-        let translateX = radius; // Изначально задаем радиус
-
-        if (length === 3) {
-            angle = this.getAngleForThree(index);
-        } else if (length === 4) {
-            angle = (360 / length) * index; // Для 4 букв (оставляем как есть, равномерно)
-        } else if (length === 5) {
-            angle = this.getAngleForFive(index);
-            if (index === 1) {
-                translateX = 150; // Для второй буквы устанавливаем 150
-            }
-        }
-
-        return { angle, translateX };
-    }
-
-    getAngleForThree(index) {
-        switch (index) {
-            case 0:
-                return 270;
-            case 1:
-                return 0;
-            case 2:
-                return 180;
-            default:
-                return null; // Возвращаем null, если индекс не верный
-        }
-    }
-
-    getAngleForFive(index) {
-        switch (index) {
-            case 0:
-                return 270;
-            case 1:
-                return 19; // Угол для второй буквы
-            case 2:
-                return 50;
-            case 3:
-                return 130;
-            case 4:
-                return 200;
-            default:
-                return null; // Возвращаем null, если индекс не верный
-        }
-    }
-
     setupListeners() {
         const letters = document.querySelectorAll('.page-ring_container__circle');
         letters.forEach(letter => {
@@ -220,82 +173,70 @@ export class Main extends Core {
         });
         document.addEventListener('mousemove', (event) => {
             if (this.isDrawing) {
-                this.drawLine(event); // Рисуем линию, если происходит рисование
+                this.helper.drawLine(event); // Рисуем линию, если происходит рисование
             }
         });
     }
 
     startDrawing(event) {
         this.isDrawing = true; // Устанавливаем флаг рисования в true
-        this.clearLine(); // Очищаем предыдущую линию
-        this.drawLine(event); // Начинаем рисовать с текущей позиции мыши
+        this.helper.clearLine(); // Очищаем предыдущую линию
+        this.helper.drawLine(event); // Начинаем рисовать с текущей позиции мыши
     }
 
     endDrawing() {
         this.isDrawing = false; // Устанавливаем флаг рисования в false
     }
 
-    clearLine() {
-        const linePath = document.querySelector('.line-visualization .line');
-
-        if (linePath) {
-            linePath.setAttribute('d', ''); // Очищаем линию
-        }
-    }
-
     startSelection(event, letter) {
-        this.currentWord = ''; // Сбрасываем текущее слово
-        this.selectedLetters = []; // Сбрасываем выбранные буквы
+        this.helper.currentWord = ''; // Сбрасываем текущее слово
+        this.helper.selectedLetters = []; // Сбрасываем выбранные буквы
         this.addLetter(letter.dataset.letter); // Добавляем букву
         letter.classList.add('active'); // Добавляем класс active
-        this.showMinDisplay(); // Показываем блок для выбранных букв
+        this.helper.showMinDisplay(); // Показываем блок для выбранных букв
         event.preventDefault();
     }
-
-    showMinDisplay() {
-        const minContainer = document.querySelector('.page-content_min');
-        minContainer.style.display = 'flex'; // Показываем блок для выбранных букв
-        this.minVisible = true; // Устанавливаем флаг видимости
-    }
-
     selectLetter(event, letter) {
-        if (this.currentWord !== '') { // Проверяем, что текущее слово не пустое
+        if (this.helper.currentWord !== '') { // Проверяем, что текущее слово не пустое
             this.addLetter(letter.dataset.letter); // Добавляем букву
             letter.classList.add('active'); // Добавляем класс active
         }
     }
 
     endSelection() {
-        if (this.currentWord !== '') {
+        if (this.helper.currentWord !== '') {
             this.checkWord(); // Проверяем слово
             this.resetSelection(); // Сбросить выбор после проверки слова
-            this.clearLine();
+            this.helper.clearLine();
         }
     }
 
     addLetter(letter) {
-        const shortWords = this.getWordsByLength().shortWords;
-        const longWords = this.getWordsByLength().longWords;
+        const wordsForLevel = this.getWordsForLevel(this.level + 1);
+        const shortWords = this.helper.getWordsByLength(wordsForLevel).shortWords;
+        const longWords = this.helper.getWordsByLength(wordsForLevel).longWords;
 
         // Объединяем массивы в нужном порядке
         const orderedWords = [...shortWords, ...longWords];
         const currentWordToGuess = orderedWords[this.currentWordIndex]; // Получаем текущее слово из нового массива
         const requiredCount = currentWordToGuess.split('').filter(l => l === letter).length;
-        const currentCount = this.selectedLetters.filter(l => l === letter).length;
+        const currentCount = this.helper.selectedLetters.filter(l => l === letter).length;
 
         // Проверяем, если текущее количество буквы меньше требуемого
         if (currentCount < requiredCount) {
-            this.selectedLetters.push(letter); // Добавляем букву
-            this.currentWord += letter; // Обновляем текущее слово
-            this.updateMinDisplay(); // Обновляем отображение выбранных букв
+            this.helper.selectedLetters.push(letter); // Добавляем букву
+            this.helper.currentWord += letter; // Обновляем текущее слово
+            this.helper.updateMinDisplay(); // Обновляем отображение выбранных букв
         }
     }
 
     checkWord() {
         const validWords = this.wordsList[this.level % 3];
-        if (validWords.includes(this.currentWord) && !this.guessedWords.includes(this.currentWord)) {
-            this.displayWord();
-            this.guessedWords.push(this.currentWord);
+        const currentWord = this.helper.currentWord;
+
+        if (validWords.includes(currentWord) && !this.guessedWords.includes(currentWord)) {
+            this.helper.displayWord();
+            this.guessedWords.push(currentWord);
             this.currentWordIndex++;
             this.saveState(); // Сохраняем состояние после угаданного слова
 
@@ -311,110 +252,13 @@ export class Main extends Core {
         }
     }
 
-    displayWord() {
-        const activeItems = document.querySelectorAll('.page-content_item, .page-content_block__item');
-        const charArray = this.currentWord.split(''); // Разбиваем текущее слово на буквы
-        let filledCount = 0; // Счетчик заполненных букв
-
-        // Перебираем все ячейки
-        for (let i = 0; i < activeItems.length; i++) {
-            // Проверяем, что ячейка пустая и не имеет класса active
-            if (!activeItems[i].classList.contains('active') && activeItems[i].querySelector('.page-content_item__text, .page-content_block__item__text').innerText === '') {
-                if (filledCount < charArray.length) {
-                    // Заполняем ячейку буквой
-                    activeItems[i].classList.add('active'); // Добавляем класс active
-                    const textElement = activeItems[i].querySelector('.page-content_item__text, .page-content_block__item__text');
-                    if (textElement) {
-                        textElement.innerText = charArray[filledCount]; // Заполняем буквой
-                    }
-                    filledCount++; // Увеличиваем счетчик
-                }
-            }
-        }
-
-        // Если слово состоит из 3-х букв, добавляем класс active для последней ячейки
-        if (charArray.length === 3 && filledCount === 3) {
-            for (let i = 0; i < activeItems.length; i++) {
-                // Находим первую незаполненную ячейку
-                if (!activeItems[i].classList.contains('active')) {
-                    activeItems[i].classList.add('active'); // Добавляем класс active
-                    break; // Выходим из цикла после добавления
-                }
-            }
-        }
-    }
-
     resetSelection() {
-        this.currentWord = ''; // Сбрасываем текущее слово
-        this.selectedLetters = []; // Сбрасываем выбранные буквы
-        this.updateMinDisplay(); // Обновляем отображение выбранных букв
-        this.clearActiveLetters(); // Убираем класс active
-        this.hideMinDisplay(); // Скрываем блок для выбранных букв
+        this.helper.currentWord = ''; // Сбрасываем текущее слово
+        this.helper.selectedLetters = []; // Сбрасываем выбранные буквы
+        this.helper.updateMinDisplay(); // Обновляем отображение выбранных букв
+        this.helper.clearActiveLetters(); // Убираем класс active
+        this.helper.hideMinDisplay(); // Скрываем блок для выбранных букв
         this.setupListeners(); // Устанавливаем слушатели заново
-    }
-
-    hideMinDisplay() {
-        const minContainer = document.querySelector('.page-content_min');
-        if (!minContainer) {
-            return;
-        }
-
-        minContainer.style.display = 'none'; // Скрываем блок для выбранных букв
-        this.minVisible = false; // Сбрасываем флаг видимости
-    }
-
-    clearActiveLetters() {
-        const letters = document.querySelectorAll('.page-ring_container__circle');
-        letters.forEach(letter => letter.classList.remove('active'));
-    }
-
-    updateMinDisplay() {
-        const minContainer = document.querySelector('.page-content_min');
-        if (!minContainer) {
-            return; // Выход из функции, если элемент не найден
-        }
-
-        minContainer.innerHTML = ''; // Очищаем контейнер для букв
-
-        for (const letter of this.selectedLetters) {
-            const item = document.createElement('div');
-            item.className = 'page-content_min__item';
-            item.innerHTML = `<span class="page-content_min__item-text">${letter}</span>`;
-            minContainer.appendChild(item); // Обновляем отображение выбранных букв
-        }
-    }
-
-    getWordsByLength() {
-        const wordsForLevel = this.getWordsForLevel(this.level + 1);
-
-        const shortWords = [];
-        const longWords = [];
-
-        wordsForLevel.forEach(word => {
-            if (word.length > 4) {
-                longWords.push(word);
-            } else {
-                shortWords.push(word);
-            }
-        });
-
-        return { shortWords, longWords };
-    }
-
-    drawLine(event) {
-        const linePath = document.querySelector('.line-visualization .line');
-        const containerRect = document.querySelector('.page-ring_container').getBoundingClientRect();
-
-        // Получаем координаты мыши относительно контейнера
-        const x = event.clientX - containerRect.left;
-        const y = event.clientY - containerRect.top;
-
-        const currentPath = linePath.getAttribute('d') || ''; // Получаем текущий путь
-        const newPath = currentPath + (currentPath ? ` L ${x} ${y}` : ` M ${x} ${y}`); // Добавляем новую точку
-
-        linePath.setAttribute('d', newPath); // Обновляем атрибут d
-        linePath.setAttribute('stroke-linecap', 'round'); // Скругление концов
-        linePath.setAttribute('stroke-linejoin', 'round'); // Скругление углов
     }
 
     endGame() {
@@ -435,7 +279,6 @@ export class Main extends Core {
         this.level = state.level || 1; // Уровень должен быть 1 по умолчанию
         this.guessedWords = state.guessedWords || [];
         this.currentWordIndex = state.currentWordIndex || 0;
-        this.render(); // Рендерим после загрузки состояния
     }
 
     saveState() {
