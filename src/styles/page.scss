@@ -1,3 +1,5 @@
+@import "mixins";
+
 // Page
 
 .page {
@@ -34,13 +36,23 @@
     gap: 6px;
 
     &_item {
-      width: 72px;
-      height: 72px;
+      width: 70px;
+      height: 70px;
       border-radius: 25%;
       background-color: var(--color-fog-20);
       display: flex;
       align-items: center;
       justify-content: center;
+
+      @include screen-tablet {
+        width: 72px;
+        height: 72px;
+        border-radius: 25%;
+        background-color: var(--color-fog-20);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
       &__text {
         position: relative;
