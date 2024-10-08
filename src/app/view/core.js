@@ -8,10 +8,12 @@ export class Core {
         this.checkPageOpen();
         this.currentGameState = this.loadGameState();
         this.isGameActive = false; // Флаг для отслеживания активности игры
+        this.isMobile = window.innerWidth <= 768;
 
         window.addEventListener('storage', this.handleStorageEvent.bind(this));
         window.addEventListener('beforeunload', this.cleanup.bind(this));
         window.addEventListener('focus', this.checkActiveTab.bind(this));
+        window.addEventListener('resize', this.updateListeners.bind(this));
 
         this.warnPopup.onRefresh = () => {
             this.refreshGameState();
@@ -29,6 +31,18 @@ export class Core {
                 this.showPopup();
             }
         });
+    }
+
+    updateListeners() {
+        const previousIsMobile = this.isMobile;
+        this.isMobile = window.innerWidth <= 768;
+
+        // Если состояние изменилось, вызываем setupListeners в Main
+        if (previousIsMobile !== this.isMobile) {
+            const mainInstance = new Main();
+
+            mainInstance.setupListeners();
+        }
     }
 
     handleStorageEvent(event) {

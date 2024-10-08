@@ -2,6 +2,7 @@
 
 .page {
   display: flex;
+  position: relative;
   width: 100%;
   align-items: center;
   flex-direction: column;
@@ -111,37 +112,33 @@
 
   &-ring_container {
     position: relative;
-    width: 294px;
-    height: 294px;
+    width: 70vw;
+    height: 70vw;
+    max-width: 294px;
+    max-height: 294px;
     border: 20px solid var(--blue-dark-30);
     border-radius: 50%;
-    background-color: transparent;
     margin: auto;
-    margin-top: 142px;
+    transform: translateY(142px);
 
     &__item {
-      position: absolute;
-      top: 86%;
-      left: 86%;
       width: 100%;
       height: 100%;
-      transform: translate(-50%, -50%);
+      overflow: hidden;
     }
 
     &__circle {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 89.94px;
-      height: 89.94px;
       border-radius: 50%;
       background-color: var(--color-white);
       color: var(--color-brown-30);
-      position: absolute;
-
       cursor: pointer;
-
       box-shadow: var(--color-fog-30) 0 6px 0;
+
+      position: absolute;
+      z-index: 10;
 
       &-text {
         position: relative;
@@ -149,6 +146,13 @@
         font-size: 57px;
         font-weight: 700;
         line-height: 89.94px;
+      }
+
+      &.active {
+        background-color: var(--color-rose) !important;
+        color: var(--color-white) !important;
+
+        box-shadow: var(--color-rose-dark) 0 6px 0 !important;
       }
     }
   }
@@ -186,13 +190,6 @@
 .page-content_block__item.active {
   background: var(--color-green);
   color: var(--color-white);
-}
-
-.page-ring_container__circle.active {
-  background-color: var(--color-rose);
-  color: var(--color-white);
-
-  box-shadow: var(--color-rose-dark) 0 6px 0;
 }
 
 .line-visualization {

@@ -15,12 +15,14 @@ export class Main extends Core {
         this.currentWordIndex = 0; // Индекс текущего слова
         this.guessedWords = []; // Массив угаданных слов
         this.level = 0; // Текущий уровень
+        this.newIsTouchDevice = false;
         this.isDrawing = false;
     }
 
     render() {
         document.body.innerHTML = this.getMainHtml();
         this.currentWordIndex = 0;
+
         this.setupRing(); // Отрисовываем первое слово
         this.setupListeners();
     }
@@ -123,30 +125,37 @@ export class Main extends Core {
         // Удаляем предыдущие буквы, если они есть
         container.innerHTML = '';
 
-        // Радиус круга для размещения букв (внутри кольца)
-        const radius = 150;
+        // Получаем размеры контейнера и находим центр
+        const containerWidth = container.offsetWidth; // Ширина контейнера
+        const containerHeight = container.offsetHeight; // Высота контейнера
+        const centerX = containerWidth / 2; // Центр по X
+        const centerY = containerHeight / 2; // Центр по Y
+
+        // Увеличиваем радиус
+        const extraRadius = 50;
+        const radius = (Math.min(containerWidth, containerHeight) / 2) - (89.94 / 2) + extraRadius; // Радиус для кнопок
 
         // Создаем кнопки для каждой буквы текущего слова
         lettersCount.forEach((letter, index) => {
             const circle = document.createElement('div');
             circle.className = `page-ring_container__circle`;
 
-            // Получаем угол и радиус
-            const { angle, translateX } = this.helper.getAngleAndTranslateX(radius, lettersCount.length, index);
+            // Угол для равномерного распределения
+            let angle = (360 / lettersCount.length) * index;
 
-            // Проверяем, что угол не равен null
-            if (angle === null) return;
-
-            // Задаем трансформацию
-            circle.style.position = 'absolute';
-
-            if (lettersCount.length === 5 && index === 1) {
-                // Инвертированная трансформация для второй буквы
-                circle.style.transform = `rotate(-${angle}deg) translate(${translateX}px) rotate(${angle}deg)`;
-            } else {
-                // Обычная трансформация для остальных букв
-                circle.style.transform = `rotate(${angle}deg) translate(${translateX}px) rotate(-${angle}deg)`;
+            // Изменяем угол для слов из 3 и 5 букв
+            if (lettersCount.length === 3) {
+                angle += 30; // Поворачиваем на 30 градусов
+            } else if (lettersCount.length === 5) {
+                angle += 55; // Поворачиваем на 55 градусов
             }
+
+            // Рассчитываем положение кнопок относительно центра
+            const x = centerX + radius * Math.cos((angle * Math.PI) / 180) - (89.94 / 2); // Положение по X
+            const y = centerY + radius * Math.sin((angle * Math.PI) / 180) - (89.94 / 2); // Положение по Y
+
+            circle.style.left = `${x}px`; // Устанавливаем координату X
+            circle.style.top = `${y}px`; // Устанавливаем координату Y
 
             // Устанавливаем размеры и другие стили
             circle.style.width = '89.94px';
@@ -154,16 +163,25 @@ export class Main extends Core {
 
             circle.innerHTML = `<span class="page-ring_container__circle-text">${letter}</span>`;
             circle.dataset.letter = letter; // Храним букву в data-атрибуте
-            container.appendChild(circle);
+            container.appendChild(circle); // Добавляем кнопку в контейнер
         });
     }
 
     setupListeners() {
         const letters = document.querySelectorAll('.page-ring_container__circle');
+
+        if (!this.isMobile) {
+            this.setupMouseListeners(letters);
+        } else {
+            this.setupTouchListeners(letters);
+        }
+    }
+
+    setupMouseListeners(letters) {
         letters.forEach(letter => {
             letter.addEventListener('mousedown', (event) => {
                 this.startSelection(event, letter);
-                this.startDrawing(event); // Начинаем рисование
+                this.startDrawing(event, false); // Начинаем рисование
             });
             letter.addEventListener('mouseover', (event) => this.selectLetter(event, letter));
             letter.addEventListener('mouseup', () => {
@@ -173,15 +191,64 @@ export class Main extends Core {
         });
         document.addEventListener('mousemove', (event) => {
             if (this.isDrawing) {
-                this.helper.drawLine(event); // Рисуем линию, если происходит рисование
+                this.helper.drawLine(event, false); // Рисуем линию, если происходит рисование
             }
         });
     }
 
-    startDrawing(event) {
+    setupTouchListeners(letters) {
+        let activeLetters = [];
+
+        letters.forEach(letter => {
+            letter.addEventListener('touchstart', (event) => {
+                event.preventDefault();
+                this.startSelection(event, letter);
+                this.startDrawing(event, true);
+                activeLetters.push(letter); // Добавляем букву в активные
+                letter.classList.add('active'); // Добавляем класс active
+            });
+
+            letter.addEventListener('touchmove', (event) => {
+                event.preventDefault();
+                const touch = event.touches[0];
+
+                letters.forEach(l => {
+                    const rect = l.getBoundingClientRect();
+                    if (
+                        touch.clientX >= rect.left &&
+                        touch.clientX <= rect.right &&
+                        touch.clientY >= rect.top &&
+                        touch.clientY <= rect.bottom
+                    ) {
+                        if (!activeLetters.includes(l)) {
+                            activeLetters.push(l); // Добавляем новую активную букву
+                            l.classList.add('active'); // Добавляем класс active
+                        }
+                        this.selectLetter(event, l);
+                    }
+                });
+            });
+
+            letter.addEventListener('touchend', () => {
+                this.endSelection();
+                this.endDrawing();
+                activeLetters.forEach(l => l.classList.remove('active')); // Убираем класс active у всех активных букв
+                activeLetters = []; // Сбрасываем массив активных букв
+            });
+        });
+
+        document.addEventListener('touchmove', (event) => {
+            if (this.isDrawing) {
+                event.preventDefault();
+                this.helper.drawLine(event, true);
+            }
+        }, { passive: false });
+    }
+
+    startDrawing(event, isTouch) {
         this.isDrawing = true; // Устанавливаем флаг рисования в true
         this.helper.clearLine(); // Очищаем предыдущую линию
-        this.helper.drawLine(event); // Начинаем рисовать с текущей позиции мыши
+        this.helper.drawLine(event, isTouch); // Начинаем рисовать с текущей позиции мыши
     }
 
     endDrawing() {
@@ -189,16 +256,33 @@ export class Main extends Core {
     }
 
     startSelection(event, letter) {
-        this.helper.currentWord = ''; // Сбрасываем текущее слово
-        this.helper.selectedLetters = []; // Сбрасываем выбранные буквы
-        this.addLetter(letter.dataset.letter); // Добавляем букву
-        letter.classList.add('active'); // Добавляем класс active
+        const rect = letter.getBoundingClientRect();
+        const coordinates = {
+            x: rect.left + window.scrollX + rect.width / 2,
+            y: rect.top + window.scrollY + rect.height / 2
+        };
+
+        // Сброс состояния
+        this.helper.currentWord = '';
+        this.helper.selectedLetters = [];
+        this.helper.selectedCoordinates = []; // Сброс координат
+
+        // Добавляем первую букву
+        this.addLetter(letter.dataset.letter, coordinates);
+        letter.classList.add('active');
         this.helper.showMinDisplay(); // Показываем блок для выбранных букв
-        event.preventDefault();
     }
+
     selectLetter(event, letter) {
-        if (this.helper.currentWord !== '') { // Проверяем, что текущее слово не пустое
-            this.addLetter(letter.dataset.letter); // Добавляем букву
+        const rect = letter.getBoundingClientRect();
+        const coordinates = {
+            x: rect.left + window.scrollX + rect.width / 2, // Центрируем по горизонтали
+            y: rect.top + window.scrollY + rect.height / 2 // Центрируем по вертикали
+        };
+
+        // Проверяем, что текущее слово не пустое
+        if (this.helper.currentWord !== '') {
+            this.addLetter(letter.dataset.letter, coordinates); // Передаем букву и координаты
             letter.classList.add('active'); // Добавляем класс active
         }
     }
@@ -211,23 +295,24 @@ export class Main extends Core {
         }
     }
 
-    addLetter(letter) {
-        const wordsForLevel = this.getWordsForLevel(this.level + 1);
-        const shortWords = this.helper.getWordsByLength(wordsForLevel).shortWords;
-        const longWords = this.helper.getWordsByLength(wordsForLevel).longWords;
+    addLetter(letter, coordinates) { // Обратите внимание на параметры
+        const { x, y } = coordinates; // Деструктуризация координат
 
-        // Объединяем массивы в нужном порядке
-        const orderedWords = [...shortWords, ...longWords];
-        const currentWordToGuess = orderedWords[this.currentWordIndex]; // Получаем текущее слово из нового массива
-        const requiredCount = currentWordToGuess.split('').filter(l => l === letter).length;
-        const currentCount = this.helper.selectedLetters.filter(l => l === letter).length;
+        const alreadyAdded = this.helper.selectedLetters.some((selectedLetter, index) => {
+            return selectedLetter === letter &&
+                this.helper.selectedCoordinates[index].x === x &&
+                this.helper.selectedCoordinates[index].y === y;
+        });
 
-        // Проверяем, если текущее количество буквы меньше требуемого
-        if (currentCount < requiredCount) {
-            this.helper.selectedLetters.push(letter); // Добавляем букву
-            this.helper.currentWord += letter; // Обновляем текущее слово
-            this.helper.updateMinDisplay(); // Обновляем отображение выбранных букв
+        if (alreadyAdded) {
+            return;
         }
+
+        this.helper.selectedLetters.push(letter);
+        this.helper.selectedCoordinates.push({ x, y }); // Сохраняем координаты
+        this.helper.currentWord += letter;
+
+        this.helper.updateMinDisplay();
     }
 
     checkWord() {

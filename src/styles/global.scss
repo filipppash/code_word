@@ -6,6 +6,8 @@ html, body {
 
 body {
   margin: 0;
+  padding: 0;
+  overflow-x: hidden;
   font-family: var(--font-family);
   background: var(--background-body);
   color: var(--font-color);

@@ -3,6 +3,7 @@ export class Helper {
         this.currentWord = '';
         this.selectedLetters = [];
         this.minVisible = false;
+        this.selectedCoordinates = [];
     }
 
     getWordsByLength(wordsLevel) {
@@ -65,13 +66,14 @@ export class Helper {
         this.minVisible = true; // Устанавливаем флаг видимости
     }
 
-    drawLine(event) {
+    drawLine(event, isTouch) {
         const linePath = document.querySelector('.line-visualization .line');
         const containerRect = document.querySelector('.page-ring_container').getBoundingClientRect();
 
+        const touch = isTouch ? event.touches[0] : undefined;
         // Получаем координаты мыши относительно контейнера
-        const x = event.clientX - containerRect.left;
-        const y = event.clientY - containerRect.top;
+        const x = isTouch ? (touch.clientX - containerRect.left) : (event.clientX - containerRect.left);
+        const y = isTouch ? (touch.clientY - containerRect.top) : (event.clientY - containerRect.top);
 
         const currentPath = linePath.getAttribute('d') || ''; // Получаем текущий путь
         const newPath = currentPath + (currentPath ? ` L ${x} ${y}` : ` M ${x} ${y}`); // Добавляем новую точку
@@ -111,54 +113,6 @@ export class Helper {
                     break; // Выходим из цикла после добавления
                 }
             }
-        }
-    }
-
-    getAngleAndTranslateX(radius, length, index) {
-        let angle;
-        let translateX = radius; // Изначально задаем радиус
-
-        if (length === 3) {
-            angle = this.getAngleForThree(index);
-        } else if (length === 4) {
-            angle = (360 / length) * index; // Для 4 букв (оставляем как есть, равномерно)
-        } else if (length === 5) {
-            angle = this.getAngleForFive(index);
-            if (index === 1) {
-                translateX = 150; // Для второй буквы устанавливаем 150
-            }
-        }
-
-        return { angle, translateX };
-    }
-
-    getAngleForThree(index) {
-        switch (index) {
-            case 0:
-                return 270;
-            case 1:
-                return 0;
-            case 2:
-                return 180;
-            default:
-                return null; // Возвращаем null, если индекс не верный
-        }
-    }
-
-    getAngleForFive(index) {
-        switch (index) {
-            case 0:
-                return 270;
-            case 1:
-                return 19; // Угол для второй буквы
-            case 2:
-                return 50;
-            case 3:
-                return 130;
-            case 4:
-                return 200;
-            default:
-                return null; // Возвращаем null, если индекс не верный
         }
     }
 }
